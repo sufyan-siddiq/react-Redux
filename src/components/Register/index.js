@@ -13,12 +13,59 @@ export const Register = () => {
   const onSubmit = (data) => {
     console.log(data, errors);
   };
+  const getDimensions = (file) => {
+    const fileReader = new FileReader();
+    return new Promise((resolve, reject) => {
+      fileReader.onerror = function () {
+        fileReader.abort();
+        reject(new Error("Failed to load image"));
+      };
+      fileReader.onload = function () {
+        const image = new Image();
+        image.src = fileReader.result;
+        image.onload = function () {
+          resolve({ width: image.width, height: image.height });
+        };
+      };
+
+      fileReader.readAsDataURL(file);
+    });
+  };
   return (
     <div className="register-container">
       <div className="title-main">
         <h1 className="title">Registration Form using React Hook Form</h1>
       </div>
       <form onSubmit={handleSubmit(onSubmit)}>
+        <div className="form-group">
+          <label htmlFor="profilePicture">Profile Picture:</label>
+          <input
+            id="profilePicture"
+            name="profilePicture"
+            type="file"
+            accept="image/*"
+            {...register("profilePicture", {
+              required: "this feild is required",
+              validate: async (value) => {
+                const fileType = ["jpg", "png", "svg", "jpeg"];
+                const type = value[0].name.split(".")[1];
+                console.log(value[0].name.split(".")[1]);
+                if (!fileType.includes(type)) {
+                  return `please upload a valid file format (${fileType})`;
+                }
+                const sizes = await getDimensions(value[0]);
+                if (sizes.width > 1000 && sizes.height > 1000) {
+                  return "Image width and height must be less than or equal 1000px";
+                }
+              },
+            })}
+          />
+          {errors.profilePicture && (
+            <small className="small-error">
+              {errors.profilePicture.message}
+            </small>
+          )}
+        </div>
         <div className="form-group">
           <label htmlFor="firstName">First Name:</label>
           <input
@@ -86,7 +133,12 @@ export const Register = () => {
             type="password"
             {...register("password", {
               required: "this feild is required",
-              minLength: 6,
+              pattern: {
+                value:
+                  /(?=^.{8,}$)((?=.*\d)|(?=.*\W+))(?![.\n])(?=.*[A-Z])(?=.*[a-z]).*$/,
+                message:
+                  "(UpperCase, LowerCase, Number/SpecialChar and min 8 Chars)",
+              },
             })}
           />
         </div>
@@ -98,13 +150,12 @@ export const Register = () => {
           <input
             name="phone"
             id="phone"
-            placeholder="phone"
+            placeholder="Enter Your Phone Number"
             type="text"
             {...register("phone", {
               required: "this feild is required",
               pattern: {
-                value:
-                  /(?=^.{8,}$)((?=.*\d)|(?=.*\W+))(?![.\n])(?=.*[A-Z])(?=.*[a-z]).*$/,
+                value: /^\d{10}$/,
                 message: "please enter a valid 10-digit phone number",
               },
             })}
@@ -122,7 +173,7 @@ export const Register = () => {
                 name="gender"
                 value="male"
                 type="radio"
-                {...register("gender")}
+                {...register("gender", { required: "this feild is required" })}
               />
             </label>
             <label>
@@ -131,7 +182,7 @@ export const Register = () => {
                 name="gender"
                 value="female"
                 type="radio"
-                {...register("gender")}
+                {...register("gender", { required: "this feild is required" })}
               />
             </label>
             <label>
@@ -141,14 +192,17 @@ export const Register = () => {
                 name="gender"
                 value="other"
                 type="radio"
-                {...register("gender")}
+                {...register("gender", { required: "this feild is required" })}
               />
             </label>
+            {errors.gender && (
+              <small className="small-error">{errors.gender.message}</small>
+            )}
           </div>
         </div>
         {/* nested object */}
-        <label>
-          Address 1
+        <div className="form-group">
+          <label>Address 1</label>
           <input
             name="address.state"
             type="text"
@@ -156,12 +210,14 @@ export const Register = () => {
               required: "this feild is required",
             })}
           />
-        </label>
+        </div>
+
         {errors?.address?.state && (
           <small className="small-error">{errors.address.message}</small>
         )}
-        <label>
-          Address 2
+
+        <div className="form-group">
+          <label>Address 2</label>
           <input
             name="address.state2"
             type="text"
@@ -169,36 +225,37 @@ export const Register = () => {
               required: "this feild is required",
             })}
           />
-        </label>
+        </div>
         {errors?.address?.state2 && (
           <small className="small-error">{errors.address.message}</small>
-        )}
+        )} 
         {/* nested object end*/}
         {/* array */}
-        <label>
-          Address line 1
+        <div className="form-group">
+          <label>Address line 1</label>
           <input
             name="address.[0]"
             type="text"
-            {...register("addline.[0]", { required: "this feild is required" })}
+            {...register("addline.[0]", {
+              required: "this feild is required",
+            })}
           />
-        </label>
-        {errors.address && (
-          <small className="small-error">This field is required</small>
+        </div>
+        {errors.addline && (
+          <small className="small-error">{errors.addline.message}</small>
         )}
-
-        <label>
-          Address line 2
+        <div className="form-group">
+          <label>Address line 2</label>
           <input
             name="address.[1]"
             type="text"
             {...register("addline.[1]", { required: "this feild is required" })}
           />
-        </label>
-        {errors.address && (
-          <small className="small-error">This field is required</small>
+        </div>
+        {errors.addline && (
+          <small className="small-error">{errors.addline.message}</small>
         )}
-        {/* array*/}
+        {/* array */}
         <div className="form-group">
           <label htmlFor="category">Category:</label>
           <select
@@ -222,17 +279,15 @@ export const Register = () => {
             className="input-box"
             type="checkbox"
             name="checkbox"
-            {...register("termsandconditions", {
+            {...register("tnc", {
               required: "this feild is required",
             })}
           />
           <label htmlFor="checkbox">i agree all terms and conditions</label>
+          {errors.tnc && (
+            <small className="small-error">{errors.tnc.message}</small>
+          )}
         </div>
-        {errors.termsandconditions && (
-          <small className="small-error">
-            {errors.termsandconditions.message}
-          </small>
-        )}
         <button type="submit">Submit</button>
       </form>
     </div>
